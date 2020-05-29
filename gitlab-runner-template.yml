@@ -313,6 +313,34 @@ Resources:
     Properties:
       LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
       RetentionInDays: 14
+  RootRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  RootInstanceProfile:
+    InstanceProfileName: 'runner-instance'
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref RootRole
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -335,6 +363,7 @@ Resources:
           {"Name":"AWS_SECURITY_GROUP", "Value": !Join ['-', [ !Ref 'AWS::StackName', GitlabRunnerSecurityRules]]},
           {"Name":"AWS_AMI", "Value": { "Fn::FindInMap" : [ "AWSAMIRegionMap", { "Ref" : "AWS::Region" }, "UBUNTU1804"]}},
           {"Name":"DOCKER_IMAGE", "Value": !Ref DockerImage},
+          {"Name":"IAM_INSTANCE_PROFILE_NAME","Value": !Ref RootInstanceProfile},
           {"Name":"ADDITIONAL_REGISTER_PARAMS", "Value": !Ref AdditionalRegisterParams},
           {"Name":"AWS_INSTANCE_TYPE", "Value": !Ref InstanceType},
           {"Name":"CACHE_TYPE", "Value": 's3'},
